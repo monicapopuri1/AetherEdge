@@ -1,0 +1,12 @@
+# AetherEdge Phase 1: Infrastructure Hardening Rules
+
+- **Persistence First:** Every node registration and task MUST be persisted in a SQLite database using SQLAlchemy. No more in-memory lists or stubs.
+- **Security Protocol:** Use the `cryptography` library for mTLS. The Orchestrator must act as a Private CA. Nodes must present a CSR on first boot and store their signed `client.crt` in `~/.aetheredge/certs/`.
+- **Heartbeat Contract:** The heartbeat response must be a JSON object containing:
+  - `status`: (e.g., "ok", "task_pending")
+  - `server_time`: ISO format
+  - `task_id`: (optional)
+  - `payload`: (optional task data)
+- **Error Handling:** If a node heartbeat fails, the node must implement an exponential backoff retry logic.
+- **Code Execution:** Tasks should be executed as subprocesses or via a Docker container runner. Capture and return the `stdout` and `stderr`.
+- **Zero-Stub Policy:** If a feature isn't implemented yet, raise a `NotImplementedError` or return a `501` status code instead of simulating a successful response.

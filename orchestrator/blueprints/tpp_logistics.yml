@@ -1,0 +1,73 @@
+# TPP Logistics Tracker — AetherEdge Blueprint
+# Runs a one-shot logistics health check and reports results back to the orchestrator.
+#
+# Required env vars (injected by BlueprintRunner):
+#   AETHER_NODE_ID            — which node is running this
+#   AETHER_TASK_ID            — task UUID for result reporting
+#   AETHER_ORCHESTRATOR_URL   — where to POST the result
+#
+# Optional env vars:
+#   TPP_API_ENDPOINT          — real logistics API (defaults to demo mode)
+#   ORCHESTRATOR_CA_CERT_PATH — path to CA cert for mTLS result reporting
+
+services:
+  tpp-agent:
+    image: python:3.11-slim
+    restart: "no"
+    environment:
+      - AETHER_NODE_ID=${AETHER_NODE_ID}
+      - AETHER_TASK_ID=${AETHER_TASK_ID}
+      - AETHER_ORCHESTRATOR_URL=${AETHER_ORCHESTRATOR_URL}
+      - TPP_API_ENDPOINT=${TPP_API_ENDPOINT:-demo}
+    command: >
+      python -c "
+      import os, json, sys
+
+      node_id  = os.environ['AETHER_NODE_ID']
+      task_id  = os.environ['AETHER_TASK_ID']
+      orch_url = os.environ['AETHER_ORCHESTRATOR_URL']
+      tpp_url  = os.environ.get('TPP_API_ENDPOINT', 'demo')
+
+      print(f'TPP Logistics Agent starting on node {node_id}')
+
+      # In demo mode use simulated shipment data.
+      # In production set TPP_API_ENDPOINT to your real API.
+      if tpp_url == 'demo':
+          shipments = [
+              {'id': 'SHP-001', 'route': 'Mumbai->Delhi',     'status': 'in_transit', 'delay_hours': 2},
+              {'id': 'SHP-002', 'route': 'Chennai->Bangalore', 'status': 'delayed',    'delay_hours': 8},
+              {'id': 'SHP-003', 'route': 'Kolkata->Hyderabad', 'status': 'on_time',    'delay_hours': 0},
+          ]
+          print(f'Demo mode: using {len(shipments)} simulated shipments')
+      else:
+          try:
+              import urllib.request
+              with urllib.request.urlopen(tpp_url + '/shipments/pending', timeout=10) as r:
+                  shipments = json.loads(r.read())
+              print(f'Fetched {len(shipments)} shipments from {tpp_url}')
+          except Exception as exc:
+              print(f'ERROR: Could not fetch shipments: {exc}', file=sys.stderr)
+              sys.exit(1)
+
+      delayed  = [s for s in shipments if s.get('status') == 'delayed']
+      on_time  = [s for s in shipments if s.get('status') == 'on_time']
+      avg_delay = sum(s.get('delay_hours', 0) for s in delayed) / len(delayed) if delayed else 0
+
+      report = {
+          'node_id':         node_id,
+          'total_shipments': len(shipments),
+          'on_time':         len(on_time),
+          'delayed':         len(delayed),
+          'avg_delay_hours': round(avg_delay, 1),
+          'severity':        'HIGH' if avg_delay >= 10 else 'MEDIUM' if avg_delay >= 4 else 'LOW',
+          'delayed_routes':  [s['route'] for s in delayed],
+      }
+
+      print('Report:', json.dumps(report, indent=2))
+      sys.exit(0)
+      "
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 10s
+      timeout: 5s
+      retries: 2

@@ -1,0 +1,5 @@
+orchestrator_url: "https://localhost:8001"   # mTLS port — CERT_REQUIRED
+bootstrap_url: "http://localhost:8000"        # plain HTTP — used for /register and /auth/sign
+listen_port: 7331
+ca_cert_path: orchestrator/server_cloud.crt   # Path to orchestrator CA cert; null = skip server cert verify (dev)
+log_level: "INFO"

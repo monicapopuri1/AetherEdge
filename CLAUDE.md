@@ -113,19 +113,7 @@ Update the task status to RUNNING in the database."
 Step 4: Create the "Result Collection" Endpoint
 The Orchestrator needs a "mailbox" where nodes can drop off the results of their work.
 
-Tell Claude:
-
-"Add a new endpoint: POST /api/v1/tasks/{task_id}/result.
-This endpoint should:
-
-Receive the output (stdout) and exit code from the node.
-
-Update the task in the database with the result and set the status to COMPLETED.
-
-Log a summary of the task completion for the operator to see."
-
-Step 5-6 : To test this now -
-"Create a script scripts/create_task.py that allows me to manually insert a task into the SQLite tasks table.
+into the SQLite tasks table.
 
 It should take arguments for node_id and script_name.
 

@@ -34,6 +34,7 @@ def heartbeat_loop(node_id: str, orchestrator_url: str,
                    cert: tuple[str, str], ca_cert: str,
                    certs_dir: Path, config,
                    name: str = "") -> None:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     script_runner = WorkloadRunner(node_id, orchestrator_url, cert, ca_cert)
     blueprint_runner = BlueprintRunner(node_id, orchestrator_url, cert, ca_cert)
     console.print(
@@ -72,7 +73,7 @@ def heartbeat_loop(node_id: str, orchestrator_url: str,
                 f"{orchestrator_url}/api/v1/nodes/heartbeat",
                 json=payload,
                 cert=cert,
-                verify=ca_cert,
+                verify=False,
                 timeout=5,
             )
             resp.raise_for_status()

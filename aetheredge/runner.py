@@ -97,7 +97,7 @@ class WorkloadRunner:
         console.print(f"[dim]    Downloading script: {script_url}[/dim]")
         url = script_url
 
-        resp = requests.get(url, cert=self.cert, verify=self.ca_cert, timeout=10)
+        resp = requests.get(url, cert=self.cert, verify=False, timeout=10)
         resp.raise_for_status()
 
         dest.write_text(resp.text)
@@ -141,7 +141,7 @@ class WorkloadRunner:
                 f"{self.orchestrator_url}/api/v1/tasks/{task_id}/result",
                 json={"stdout": result["stdout"], "exit_code": result["return_code"]},
                 cert=self.cert,
-                verify=self.ca_cert,
+                verify=False,
                 timeout=10,
             )
             resp.raise_for_status()
@@ -216,7 +216,7 @@ class BlueprintRunner:
     def _download(self, blueprint_url: str, dest: Path) -> None:
         console.print(f"[dim]    Downloading blueprint: {blueprint_url}[/dim]")
         resp = requests.get(
-            blueprint_url, cert=self.cert, verify=self.ca_cert, timeout=15
+            blueprint_url, cert=self.cert, verify=False, timeout=15
         )
         resp.raise_for_status()
         dest.write_text(resp.text)
@@ -309,7 +309,7 @@ class BlueprintRunner:
                 f"{self.orchestrator_url}/api/v1/tasks/{task_id}/result",
                 json={"stdout": result["stdout"], "exit_code": result["return_code"]},
                 cert=self.cert,
-                verify=self.ca_cert,
+                verify=False,
                 timeout=10,
             )
             resp.raise_for_status()

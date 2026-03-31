@@ -145,7 +145,7 @@ st.subheader("Nodes")
 if nodes:
     display_cols = ["status", "name", "node_id", "hostname", "platform", "arch", "revoked", "last_seen"]
     df_nodes = pd.DataFrame(nodes)[display_cols]
-    st.dataframe(df_nodes, use_container_width=True, hide_index=True)
+    st.dataframe(df_nodes, width="stretch", hide_index=True)
 else:
     st.info("No nodes registered yet.")
 
@@ -201,8 +201,8 @@ else:
         f"{n['name']} ({n['node_id'][:8]}…)": n["_node_id_raw"]
         for n in online_node_list
     }
-    selected_label = st.sidebar.selectbox("Select Node", list(node_options.keys()))
-    selected_node_id = node_options[selected_label]
+    selected_labels = st.sidebar.multiselect("Select Nodes", list(node_options.keys()), default=list(node_options.keys())[:1])
+    selected_node_ids = [node_options[l] for l in selected_labels]
 
     workload_type = st.sidebar.radio("Workload Type", ["script", "blueprint"], horizontal=True)
 
@@ -218,15 +218,24 @@ else:
     else:
         selected_file = st.sidebar.selectbox(file_label, options)
 
-        if st.sidebar.button("Deploy Task", use_container_width=True):
-            task_id = create_task(selected_node_id, selected_file, workload_type)
-            st.sidebar.success(f"Task created!\n`{task_id[:8]}…`")
-            st.cache_data.clear()
-            st.rerun()
+        if st.sidebar.button("Deploy Task", width="stretch"):
+            if not selected_node_ids:
+                st.sidebar.warning("Select at least one node.")
+            else:
+                for node_id in selected_node_ids:
+                    create_task(node_id, selected_file, workload_type)
+                st.sidebar.success(f"Task deployed to {len(selected_node_ids)} node(s)!")
+                st.cache_data.clear()
+                st.rerun()
 
 st.sidebar.divider()
 st.sidebar.caption("Auto-refreshes every 5s via cache TTL. Use the button to force refresh.")
 
-if st.sidebar.button("🔄 Refresh Now", use_container_width=True):
+if st.sidebar.button("🔄 Refresh Now", width="stretch"):
     st.cache_data.clear()
     st.rerun()
+
+# Auto-rerun every 5 seconds
+import time
+time.sleep(5)
+st.rerun()
